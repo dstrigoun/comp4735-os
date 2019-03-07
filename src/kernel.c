@@ -8,6 +8,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "kernel.h"
 #include "hal/hal.h"
@@ -24,6 +26,7 @@ void check_command(char*);
 void echo(char* input);
 void ls(char* input);
 void cat(char* input);
+void cd(char* input);
 
 /*
  *		Kernel's entry point
@@ -88,6 +91,8 @@ void check_command(char* input){
     cat(arg);
   } else if (strcmp(input, "sysinfo") == 0) {
     sys_info(SYSTEM_INFO);
+  } else if (strcmp("cd", command) == 0) {
+    cd(arg);
   }
 }
 
@@ -186,6 +191,26 @@ void cat(char* input){
     // Close the file
     sdCloseHandle(fHandle);
   }
+}
+
+void cd(char* input) {
+  // change current directory
+  
+  // 1. make a global string for current dir (root is "\")
+  // 2. if input is '..':
+        // if string is "\", don't do anything
+        // if string has more, remove last dir from string (ex: "\new" becomes "\")
+  // 3. else:
+        // run sdFindFirstFile(global string) and cmp with input
+        // while loop with sdFindNextFile and continue comparing
+        // if there's a match:
+              // check if dir with (find.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY)
+              // if dir:
+                    // append input to end of global string with a backward slash
+              // if file:
+                    // don't do anything
+        // if no match:
+              // don't do anything
 }
 
 /*
