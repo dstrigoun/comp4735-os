@@ -57,6 +57,7 @@ void main(uint32_t r0, uint32_t r1, uint32_t atags){
       // hal_io_video_puts("\n\r", 2, VIDEO_COLOR_WHITE);
       // hal_io_video_puts(inbuf, 2, VIDEO_COLOR_WHITE);
       hal_io_video_puts("\n\r$ ", 2, VIDEO_COLOR_GREEN);
+      memset(inbuf, 0, sizeof inbuf);
       incount = 0;
 
     } else {
