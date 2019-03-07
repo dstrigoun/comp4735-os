@@ -273,6 +273,12 @@ bool sdReadFile (HANDLE hFile,										// Handle as returned from CreateFile
 				 uint32_t* lpNumberOfBytesRead,						// Provide a pointer to a value which updated to bytes actually placed in buffer
 				 void* lpOverlapped);								// Currently not supported (use 0)
 
+int sdReadFileRetInt (HANDLE hFile,										// Handle as returned from CreateFile
+				 void* lpBuffer,									// Pointer to buffer read data will be placed
+				 uint32_t nNumberOfBytesToRead,						// Number of bytes requested to read
+				 uint32_t* lpNumberOfBytesRead,						// Provide a pointer to a value which updated to bytes actually placed in buffer
+				 void* lpOverlapped);	
+
 /*-[sdCloseHandle]------------------------------------------------------------}
 . Closes file on the SD Card as per the handle that was given when it opened.
 . 23Feb17 LdB

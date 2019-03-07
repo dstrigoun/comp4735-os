@@ -2283,6 +2283,70 @@ bool sdReadFile (HANDLE hFile,										// Handle as returned from CreateFile
 	}
 	return false;													// Return read failure
 }
+int sdReadFileRetInt (HANDLE hFile,										// Handle as returned from CreateFile
+				 void* lpBuffer,									// Pointer to buffer read data will be placed
+				 uint32_t nNumberOfBytesToRead,						// Number of bytes requested to read
+				 uint32_t* lpNumberOfBytesRead,						// Provide a pointer to a value which updated to bytes actually placed in buffer
+				 void* lpOverlapped)								// Currently not supported (use 0)
+{
+	if ((hFile > 0) && (hFile <= MAX_FILE_IO_RECORDS) &&
+		(intFileIORecord[hFile - 1].srec.firstSector != 0)) {		// File handle maps to an internal file io record in use
+		uint32_t bytesRead = 0;										// Zero bytes read
+		uint32_t retErrId = FAT_RESULT_OK;							// Preset error id clear
+
+		while ((retErrId == FAT_RESULT_OK) && (intFileIORecord[hFile - 1].srec.cluster < 0x0ffffff6)
+			&& (intFileIORecord[hFile - 1].srec.cluster != 0)) {	// Check cluster valid and read successful
+
+			while (	(nNumberOfBytesToRead > bytesRead) &&			// Still more bytes to read
+				(intFileIORecord[hFile - 1].filePos < intFileIORecord[hFile - 1].fileSize) && // Still inside fileSize
+				(intFileIORecord[hFile - 1].srec.bPos <  512) )		// While not a buffer end
+			{
+				((uint8_t*)lpBuffer)[bytesRead] = intFileIORecord[hFile - 1].srec.buffer[intFileIORecord[hFile - 1].srec.bPos++]; // Transfer byte and increment pointer
+				bytesRead++;										// Increment bytes read
+				intFileIORecord[hFile - 1].filePos++;				// Increment file position
+			}
+			if (nNumberOfBytesToRead == bytesRead) {				// Finished
+				if (lpNumberOfBytesRead) *lpNumberOfBytesRead = bytesRead;
+				return 0;										// Read completed successfully
+			}
+			if (intFileIORecord[hFile - 1].filePos >= intFileIORecord[hFile - 1].fileSize)
+			{														// File end reached
+				if (lpNumberOfBytesRead) *lpNumberOfBytesRead = bytesRead;
+				return 1;										// Read ended as file ran out of data
+			}
+
+			intFileIORecord[hFile - 1].srec.sector++;				// Increment sector
+			if (intFileIORecord[hFile - 1].srec.sector < sdCard.partition.sectorPerCluster) // Next sector still in current cluster
+			{
+				intFileIORecord[hFile - 1].srec.bPos = 0;			// Reset buffer position to top of buffer
+				if (sdTransferBlocks(intFileIORecord[hFile - 1].srec.firstSector + intFileIORecord[hFile - 1].srec.sector,
+					1, &intFileIORecord[hFile - 1].srec.buffer[0], false) != SD_OK) {
+					return 2;									// Return read failure
+				}
+			} else {												// Need to move to next cluster
+				intFileIORecord[hFile - 1].srec.cluster = getSetNextCluster(
+					intFileIORecord[hFile - 1].srec.cluster, false, 0);// Fetch the next cluster
+				intFileIORecord[hFile - 1].srec.firstSector = getFirstSector(
+					intFileIORecord[hFile - 1].srec.cluster,
+					sdCard.partition.sectorPerCluster,
+					sdCard.partition.firstDataSector);				// Hold the first sector of this new cluster
+				intFileIORecord[hFile - 1].srec.sector = 0;			// Zero the sector count
+				intFileIORecord[hFile - 1].srec.bPos = 0;			// Reset buffer position to top of buffer
+				if (sdTransferBlocks(intFileIORecord[hFile - 1].srec.firstSector + intFileIORecord[hFile - 1].srec.sector,
+					1, &intFileIORecord[hFile - 1].srec.buffer[0], false) != SD_OK) {
+					return 3;									// Return read failure
+				}
+			}
+		}
+	}
+	if (!(hFile > 0)){
+		return 4;
+	}			
+	if (!(hFile <= MAX_FILE_IO_RECORDS)){
+		return 5;
+	}										// Return read failure
+	return 6;
+}
 
 /*-[sdCloseHandle]----------------------------------------------------------}
 . Closes file or device as per the handle that was given when it opened.
