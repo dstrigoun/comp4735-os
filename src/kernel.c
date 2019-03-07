@@ -65,7 +65,7 @@ void main(uint32_t r0, uint32_t r1, uint32_t atags){
       printf_serial( "%c", c );
       printf_video( "%c", c );  //<<--- We also have printfs
     }
-    
+
   }
 
 }
@@ -78,13 +78,15 @@ void check_command(char* input){
   char* arg;
   strcpy(command, strtok(input, " "));
   arg = &input[strlen(command)+1];
-  
+
   if (strcmp("echo", command) == 0){
     echo(arg);
   } else if (strcmp("ls", command) == 0){
     ls(arg);
   } else if (strcmp("cat", command) == 0){
     cat(arg);
+  } else if (strcmp(input, "sysinfo") == 0) {
+    sys_info(SYSTEM_INFO);
   }
 }
 
@@ -95,7 +97,7 @@ void echo(char* input){
     hal_io_serial_puts( SerialA, "\n\r " );
     hal_io_serial_puts( SerialA, input);
     hal_io_serial_puts( SerialA, "\n\r$ " );
-    
+
     hal_io_video_puts("\n\r", 2, VIDEO_COLOR_WHITE);
     hal_io_video_puts(input, 2, VIDEO_COLOR_WHITE);
 }
@@ -177,8 +179,8 @@ void cat(char* input){
         printf_serial("read fail 6" );
       }
     } while (bytesRead > 0);
-    
-    
+
+
 
     // Close the file
     sdCloseHandle(fHandle);
