@@ -28,6 +28,8 @@ void ls(char* input);
 void cat(char* input);
 void cd(char* input);
 
+char curr_dir[16] = "\\";
+
 /*
  *		Kernel's entry point
 **/
@@ -193,24 +195,61 @@ void cat(char* input){
   }
 }
 
+//TODO:
+// - findFirstFile currently returns the last file first
+//     - i think this is because this was used earlier.. do i have to reset?
+// - test going back a dir once above is finished
 void cd(char* input) {
-  // change current directory
-  
-  // 1. make a global string for current dir (root is "\")
-  // 2. if input is '..':
-        // if string is "\", don't do anything
-        // if string has more, remove last dir from string (ex: "\new" becomes "\")
-  // 3. else:
-        // run sdFindFirstFile(global string) and cmp with input
-        // while loop with sdFindNextFile and continue comparing
-        // if there's a match:
-              // check if dir with (find.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY)
-              // if dir:
-                    // append input to end of global string with a backward slash
-              // if file:
-                    // don't do anything
-        // if no match:
-              // don't do anything
+  HANDLE fh;
+  FIND_DATA find;
+
+  if (strcmp(input, "..") == 0) {
+    // not tested
+    if (strlen(curr_dir) != 1) {
+      int numBack = 0;
+
+      for (int i = 16; i > 0; i--) {
+        if (curr_dir[i] == '\\') {
+          numBack++;
+          curr_dir[i] = 0;
+        } else if (numBack == 1) {
+          curr_dir[i] = 0;
+        } else if (numBack == 2) {
+          break;
+        }
+      }
+    } else {
+      printf_serial("\n\rCurrently in root folder\n\r");
+      hal_io_video_puts("\n\rCurrently in root folder\n\r", 2, VIDEO_COLOR_WHITE);
+    }
+  } else {
+    fh = sdFindFirstFile(curr_dir, &find);	
+    do {
+      printf_serial("\n%s\n", find.cFileName);
+
+      if (strstr(find.cFileName, input) != NULL) {
+        if (find.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY) {
+          int input_len = strlen(input);
+
+          for (int i = 0; i < 16; i++) {
+            if (curr_dir[i] == '\\' && curr_dir[i+1] == 0) {
+              int j;
+
+              for (j = 0; j < input_len; j++) {
+                curr_dir[i+j] = input[j];
+              }
+
+              curr_dir[i+j] = '\\';
+
+              break;
+            }
+          }
+        }
+      }
+	  } while (sdFindNextFile(fh, &find) != 0);	
+  }
+
+  printf_serial("%s\n\r", &curr_dir[0]);
 }
 
 /*
