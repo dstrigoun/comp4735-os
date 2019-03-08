@@ -203,6 +203,8 @@ void cd(char* input) {
   HANDLE fh;
   FIND_DATA find;
 
+  char root_dir[16] = "\\*";
+
   if (strcmp(input, "..") == 0) {
     // not tested
     if (strlen(curr_dir) != 1) {
@@ -223,7 +225,8 @@ void cd(char* input) {
       hal_io_video_puts("\n\rCurrently in root folder\n\r", 2, VIDEO_COLOR_WHITE);
     }
   } else {
-    fh = sdFindFirstFile(curr_dir, &find);	
+    fh = sdFindFirstFile(root_dir, &find);	
+    printf_serial("\n%s\n", find.cFileName);
     do {
       printf_serial("\n%s\n", find.cFileName);
 
@@ -248,6 +251,10 @@ void cd(char* input) {
       }
 	  } while (sdFindNextFile(fh, &find) != 0);	
   }
+
+  printf_serial("\n%s\n", find.cFileName);
+
+  sdFindClose(fh);	
 
   printf_serial("%s\n\r", &curr_dir[0]);
 }
