@@ -195,16 +195,15 @@ void cat(char* input){
   }
 }
 
-//TODO:
-// - test going back a dir once above is finished
+ /*
+ * Change current directory
+ */
 void cd(char* input) {
   HANDLE fh;
   FIND_DATA find;
 
-  // char root_dir[16] = "\\*";
-
   if (strcmp(input, "..") == 0) {
-    // not tested
+    // Check if not in root folder
     if (strlen(curr_dir) != 2) {
       int numBack = 0;
 
@@ -221,38 +220,38 @@ void cd(char* input) {
         } else {                            // letter
           curr_dir[i] = 0;
         }
-        printf_serial("%s %d\n\r", &curr_dir[0], numBack);
       }
-      // Adds a * at the end
+
+      // Adds a * at the end of root dir
       if (strlen(curr_dir) == 1) {
         curr_dir[1] = '*';
       }
+
+      // Adds a * at the end of path
       int zero = 0;
       for (int i = 0; i > 16; i++) {
-        printf_serial("inside the stupid for loop\n\r");
         if (zero == 1) {
-          printf_serial("%s\n\r", &curr_dir[0]);
           break;
         } else if (curr_dir[i] == 0) {
           curr_dir[i] = '*';
           zero++;
-          printf_serial("%s\n\r", &curr_dir[0]);
         }
-        printf_serial("%s\n\r", &curr_dir[0]);
       }
     } else {
+      // Already in root folder
       printf_serial("\n\rCurrently in root folder\n\r");
       hal_io_video_puts("\n\rCurrently in root folder\n\r", 2, VIDEO_COLOR_WHITE);
     }
   } else {
     fh = sdFindFirstFile(curr_dir, &find);
     do {
-      printf_serial("\n%s\n", find.cFileName);
-
+      // Check if input matches a file name
       if (strcmp(find.cFileName, input) == 0) {
+        // Make sure file is a dir
         if (find.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY) {
           int input_len = strlen(input);
 
+          // Append dir to end of curr_dir
           for (int i = 0; i < 16; i++) {
             if (curr_dir[i] == '*' && curr_dir[i+1] == 0) {
               int j;
@@ -272,9 +271,7 @@ void cd(char* input) {
 	  } while (sdFindNextFile(fh, &find) != 0);	
   }
 
-  sdFindClose(fh);	
-
-  printf_serial("%s\n\r", &curr_dir[0]);
+  sdFindClose(fh);
 }
 
 /*
