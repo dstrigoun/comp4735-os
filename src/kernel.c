@@ -28,7 +28,7 @@ void ls(char* input);
 void cat(char* input);
 void cd(char* input);
 
-char curr_dir[16] = "\\";
+char curr_dir[16] = "\\*";
 
 /*
  *		Kernel's entry point
@@ -121,7 +121,7 @@ void ls(char* input){
   HANDLE fh;
 	FIND_DATA find;
 	char* month[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
-	fh = sdFindFirstFile(input/*dirName*/, &find);							// Find first file
+	fh = sdFindFirstFile(curr_dir, &find);							// Find first file
 	do {
 		if (find.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY){
       printf_serial("%s <DIR>\n", find.cFileName);
@@ -196,46 +196,65 @@ void cat(char* input){
 }
 
 //TODO:
-// - findFirstFile currently returns the last file first
-//     - i think this is because this was used earlier.. do i have to reset?
 // - test going back a dir once above is finished
 void cd(char* input) {
   HANDLE fh;
   FIND_DATA find;
 
-  char root_dir[16] = "\\*";
+  // char root_dir[16] = "\\*";
 
   if (strcmp(input, "..") == 0) {
     // not tested
-    if (strlen(curr_dir) != 1) {
+    if (strlen(curr_dir) != 2) {
       int numBack = 0;
 
+      // Removes first dir from the right
       for (int i = 16; i > 0; i--) {
-        if (curr_dir[i] == '\\') {
+        if (curr_dir[i] == '*') {           // *
+          curr_dir[i] = 0;
+        } else if (curr_dir[i] == '\\') {   // back slash
+          if (numBack == 1) {               // second back slash
+            break;
+          }
           numBack++;
           curr_dir[i] = 0;
-        } else if (numBack == 1) {
+        } else {                            // letter
           curr_dir[i] = 0;
-        } else if (numBack == 2) {
-          break;
         }
+        printf_serial("%s %d\n\r", &curr_dir[0], numBack);
+      }
+      // Adds a * at the end
+      if (strlen(curr_dir) == 1) {
+        curr_dir[1] = '*';
+      }
+      int zero = 0;
+      for (int i = 0; i > 16; i++) {
+        printf_serial("inside the stupid for loop\n\r");
+        if (zero == 1) {
+          printf_serial("%s\n\r", &curr_dir[0]);
+          break;
+        } else if (curr_dir[i] == 0) {
+          curr_dir[i] = '*';
+          zero++;
+          printf_serial("%s\n\r", &curr_dir[0]);
+        }
+        printf_serial("%s\n\r", &curr_dir[0]);
       }
     } else {
       printf_serial("\n\rCurrently in root folder\n\r");
       hal_io_video_puts("\n\rCurrently in root folder\n\r", 2, VIDEO_COLOR_WHITE);
     }
   } else {
-    fh = sdFindFirstFile(root_dir, &find);	
-    printf_serial("\n%s\n", find.cFileName);
+    fh = sdFindFirstFile(curr_dir, &find);
     do {
       printf_serial("\n%s\n", find.cFileName);
 
-      if (strstr(find.cFileName, input) != NULL) {
+      if (strcmp(find.cFileName, input) == 0) {
         if (find.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY) {
           int input_len = strlen(input);
 
           for (int i = 0; i < 16; i++) {
-            if (curr_dir[i] == '\\' && curr_dir[i+1] == 0) {
+            if (curr_dir[i] == '*' && curr_dir[i+1] == 0) {
               int j;
 
               for (j = 0; j < input_len; j++) {
@@ -243,6 +262,7 @@ void cd(char* input) {
               }
 
               curr_dir[i+j] = '\\';
+              curr_dir[i+j+1] = '*';
 
               break;
             }
@@ -251,8 +271,6 @@ void cd(char* input) {
       }
 	  } while (sdFindNextFile(fh, &find) != 0);	
   }
-
-  printf_serial("\n%s\n", find.cFileName);
 
   sdFindClose(fh);	
 
