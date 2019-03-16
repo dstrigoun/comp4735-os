@@ -27,6 +27,7 @@ void echo(char* input);
 void ls(char* input);
 void cat(char* input);
 void cd(char* input);
+void cur_working_dir();
 
 char curr_dir[16] = "\\*";
 
@@ -42,28 +43,25 @@ void main(uint32_t r0, uint32_t r1, uint32_t atags){
   sd_card_fs_demo();   //<<-- Uncomment this to show File System/SD Card demo
 
   //Welcome Msg Video
-  hal_io_video_puts( "\n\r\n\rWelcome to MiniOS Pi Zero\n\r", 3, VIDEO_COLOR_GREEN );
-  hal_io_serial_puts( SerialA, "\n\r\n\rWelcome to MiniOS Pi Zero\n\r" );
-  hal_io_video_puts( "\n\r$ ", 2, VIDEO_COLOR_GREEN );
-  hal_io_serial_puts( SerialA, "\n\r$ " );
+  hal_io_video_puts( "\n\r\n\rWelcome to MiniOS Pi Zero", 3, VIDEO_COLOR_GREEN );
+  hal_io_serial_puts( SerialA, "\n\r\n\rWelcome to MiniOS Pi Zero" );
 
   uint8_t c;
   char inbuf[1024];
   size_t incount = 0;
 
-	while (1){
+  cur_working_dir();
+
+  while (1){
+
     c = hal_io_serial_getc( SerialA );
     if (c == '\r'){
       inbuf[incount] = '\0';
-      // hal_io_serial_puts( SerialA, "\n\r$ " );
-      // hal_io_serial_puts( SerialA, inbuf);
-      // hal_io_serial_puts( SerialA, "\n\r$ " );
       check_command(inbuf);
-      // hal_io_video_puts("\n\r", 2, VIDEO_COLOR_WHITE);
-      // hal_io_video_puts(inbuf, 2, VIDEO_COLOR_WHITE);
-      hal_io_video_puts("\n\r$ ", 2, VIDEO_COLOR_GREEN);
       memset(inbuf, 0, sizeof inbuf);
+
       incount = 0;
+      cur_working_dir();
 
     } else {
       inbuf[incount] = c;
@@ -268,7 +266,7 @@ void cd(char* input) {
           }
         }
       }
-	  } while (sdFindNextFile(fh, &find) != 0);	
+	  } while (sdFindNextFile(fh, &find) != 0);
   }
 
   sdFindClose(fh);
@@ -377,3 +375,11 @@ void DisplayDirectory(const char* dirName) {
 	} while (sdFindNextFile(fh, &find) != 0);						// Loop finding next file
 	sdFindClose(fh);												// Close the serach handle
 }
+
+/*
+ * Prints the current working directory
+ */
+ void cur_working_dir() {
+   printf_serial("\n\r$ %s\n\r", curr_dir);
+   printf_video("\n\r$ %s\n\r", curr_dir);
+ }
