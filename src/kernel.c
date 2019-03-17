@@ -8,6 +8,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "kernel.h"
 #include "hal/hal.h"
@@ -24,6 +26,9 @@ void check_command(char*);
 void echo(char* input);
 void ls(char* input);
 void cat(char* input);
+void cd(char* input);
+
+char curr_dir[16] = "\\*";
 
 /*
  *		Kernel's entry point
@@ -88,6 +93,8 @@ void check_command(char* input){
     cat(arg);
   } else if (strcmp(input, "sysinfo") == 0) {
     sys_info(SYSTEM_INFO);
+  } else if (strcmp("cd", command) == 0) {
+    cd(arg);
   }
 }
 
@@ -114,7 +121,7 @@ void ls(char* input){
   HANDLE fh;
 	FIND_DATA find;
 	char* month[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
-	fh = sdFindFirstFile(input/*dirName*/, &find);							// Find first file
+	fh = sdFindFirstFile(curr_dir, &find);							// Find first file
 	do {
 		if (find.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY){
       printf_serial("%s <DIR>\n", find.cFileName);
@@ -186,6 +193,85 @@ void cat(char* input){
     // Close the file
     sdCloseHandle(fHandle);
   }
+}
+
+ /*
+ * Change current directory
+ */
+void cd(char* input) {
+  HANDLE fh;
+  FIND_DATA find;
+
+  if (strcmp(input, "..") == 0) {
+    // Check if not in root folder
+    if (strlen(curr_dir) != 2) {
+      int numBack = 0;
+
+      // Removes first dir from the right
+      for (int i = 16; i > 0; i--) {
+        if (curr_dir[i] == '*') {           // *
+          curr_dir[i] = 0;
+        } else if (curr_dir[i] == '\\') {   // back slash
+          if (numBack == 1) {               // second back slash
+            break;
+          }
+          numBack++;
+          curr_dir[i] = 0;
+        } else {                            // letter
+          curr_dir[i] = 0;
+        }
+      }
+
+      // Adds a * at the end of root dir
+      if (strlen(curr_dir) == 1) {
+        curr_dir[1] = '*';
+      }
+
+      // Adds a * at the end of path
+      int zero = 0;
+      for (int i = 0; i > 16; i++) {
+        if (zero == 1) {
+          break;
+        } else if (curr_dir[i] == 0) {
+          curr_dir[i] = '*';
+          zero++;
+        }
+      }
+    } else {
+      // Already in root folder
+      printf_serial("\n\rCurrently in root folder\n\r");
+      hal_io_video_puts("\n\rCurrently in root folder\n\r", 2, VIDEO_COLOR_WHITE);
+    }
+  } else {
+    fh = sdFindFirstFile(curr_dir, &find);
+    do {
+      // Check if input matches a file name
+      if (strcmp(find.cFileName, input) == 0) {
+        // Make sure file is a dir
+        if (find.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY) {
+          int input_len = strlen(input);
+
+          // Append dir to end of curr_dir
+          for (int i = 0; i < 16; i++) {
+            if (curr_dir[i] == '*' && curr_dir[i+1] == 0) {
+              int j;
+
+              for (j = 0; j < input_len; j++) {
+                curr_dir[i+j] = input[j];
+              }
+
+              curr_dir[i+j] = '\\';
+              curr_dir[i+j+1] = '*';
+
+              break;
+            }
+          }
+        }
+      }
+	  } while (sdFindNextFile(fh, &find) != 0);	
+  }
+
+  sdFindClose(fh);
 }
 
 /*
