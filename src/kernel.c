@@ -115,40 +115,81 @@ void echo(char* input){
 * print bin file in hex
 */
 void dump(char* input){
+  char buf[101];
   HANDLE fHandle = sdCreateFile(input, GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-  if (fHandle != 0){
+  if (fHandle != 0) {
     uint32_t bytesRead;
-    FIND_DATA find;
-    sdFindFirstFile(input, &find);
-    int totalBytes = find.nFileSizeLow;
-    int totalBytesRead = 0;
-    int bytesToRead;
-    char readBuff[101];
-    char hexBuff[201];
-    
-    while (totalBytesRead < totalBytes){
-      if (100 < (totalBytes - totalBytesRead)){
-        bytesToRead = totalBytes - totalBytesRead;
-      } else {
-        bytesToRead = 100;
+    int readres;
+    do {
+      if (((readres = sdReadFileRetInt(fHandle, &buf[0], 100, &bytesRead, 0)) == 0))  {
+        buf[bytesRead] = '\0';  ///insert null char
+        // printf_serial("%s", &buf[0]);
+        // hal_io_video_puts(buf, 2, VIDEO_COLOR_WHITE);
       }
-      if(sdReadFileRetInt(fHandle, &readBuff, bytesToRead, &bytesRead, 0) == 0){
-      totalBytesRead += bytesRead;
-      readBuff[bytesRead] = '\0';
-
-      int i = 0;
-      for (int i; i < 100; i++){
-        if (readBuff[i] == '\0'){
-          break;
+      else if (readres == 1 ){
+        buf[bytesRead] = '\0';  ///insert null char
+        // printf_serial("%s", &buf[0]);
+        // hal_io_video_puts(buf, 2, VIDEO_COLOR_WHITE);
+        // printf_serial("EOF" );
+      }
+      if (readres == 1 || readres == 0){
+        for (int i = 0; i < bytesRead; i++){
+          printf_serial("%02X ", buf[i]);
+          printf_video("%02X ", buf[i]);
         }
-        sprintf(hexBuff+2*i, "%02X", readBuff[i]);
       }
-      hexBuff[2*i] = '\0';
-      printf_serial("%s", &hexBuff[0]);
-      hal_io_video_puts(hexBuff, 2, VIDEO_COLOR_WHITE);
-      }
-    }
+    } while (bytesRead > 0);
+
+
+
+    // Close the file
+    sdCloseHandle(fHandle);
   }
+  // HANDLE fHandle = sdCreateFile(input, GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+  // if (fHandle != 0){
+  //   uint32_t bytesRead;
+  //   FIND_DATA find;
+  //   printf_serial("%s", "pre-find");
+  //   sdFindFirstFile(input, &find);
+  //   printf_serial("%s", "post find");
+  //   int totalBytes = find.nFileSizeLow;
+  //   int totalBytesRead = 0;
+  //   uint32_t bytesToRead;
+  //   char readBuff[101];
+  //   char hexBuff[201];
+    
+  //   printf_serial("total bytes %d\n\r", totalBytes);
+    
+  //   while (totalBytesRead < totalBytes){
+  //     if (100 < (totalBytes - totalBytesRead)){
+  //       bytesToRead = totalBytes - totalBytesRead;
+  //     } else {
+  //       bytesToRead = 100;
+  //     }
+  //     if(sdReadFileRetInt(fHandle, &readBuff, bytesToRead, &bytesRead, 0) == 0){
+  //       totalBytesRead += bytesRead;
+  //       printf_serial("totalBytesRead: %d\n\r", totalBytesRead);
+
+  //       readBuff[bytesRead] = '\0';
+  //       printf_serial("readBuf: %s", readBuff);
+
+  //       int i = 0;
+  //       for (i; i < 100; i++){
+  //         if (readBuff[i] == '\0'){
+  //           break;
+  //         }
+  //         sprintf(hexBuff+2*i, "%02X", readBuff[i]);
+  //       }
+  //       hexBuff[2*i] = '\0';
+  //       printf_serial("%s", &hexBuff[0]);
+  //       hal_io_video_puts(hexBuff, 2, VIDEO_COLOR_WHITE);
+  //     }
+  //     else {
+  //       printf_serial("%s", "dump error reading file");
+  //       return;
+  //     }
+  //   }
+  // }
 }
 
 /*
@@ -235,6 +276,7 @@ void cat(char* input){
     sdCloseHandle(fHandle);
   }
 }
+
 
  /*
  * Change current directory
