@@ -93,6 +93,8 @@ void check_command(char* input){
     sys_info(SYSTEM_INFO);
   } else if (strcmp("cd", command) == 0) {
     cd(arg);
+  } else if (strcmp("dump", command) == 0) {
+    dump(arg);
   }
 }
 
@@ -106,6 +108,46 @@ void echo(char* input){
 
     hal_io_video_puts("\n\r", 2, VIDEO_COLOR_WHITE);
     hal_io_video_puts(input, 2, VIDEO_COLOR_WHITE);
+}
+
+/*
+* print bin file in hex
+*/
+void dump(char* input){
+  HANDLE fHandle = sdCreateFile(input, GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+  if (fHandle != 0){
+    uint32_t bytesRead;
+    FIND_DATA find;
+    sdFindFirstFile(input, &find);
+    int totalBytes = find.nFileSizeLow;
+    int totalBytesRead = 0;
+    int bytesToRead;
+    char readBuff[101];
+    char hexBuff[201];
+    
+    while (totalBytesRead < totalBytes){
+      if (100 < (totalBytes - totalBytesRead)){
+        bytesToRead = totalBytes - totalBytesRead;
+      } else {
+        bytesToRead = 100;
+      }
+      if(sdReadFileRetInt(fHandle, &readBuff, bytesToRead, &bytesRead, 0) == 0){
+      totalBytesRead += bytesRead;
+      readBuff[bytesRead] = '\0';
+
+      int i = 0;
+      for (int i; i < 100; i++){
+        if (readBuff[i] == '\0'){
+          break;
+        }
+        sprintf(hexBuff+2*i, "%02X", readBuff[i]);
+      }
+      hexBuff[2*i] = '\0';
+      printf_serial("%s", &hexBuff[0]);
+      hal_io_video_puts(hexBuff, 2, VIDEO_COLOR_WHITE);
+      }
+    }
+  }
 }
 
 /*
