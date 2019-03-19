@@ -28,6 +28,7 @@ void ls(char* input);
 void cat(char* input);
 void cd(char* input);
 void cur_working_dir();
+void dump(char* input);
 
 char curr_dir[16] = "\\*";
 
