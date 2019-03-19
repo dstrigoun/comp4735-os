@@ -31,6 +31,8 @@ void cur_working_dir();
 
 char curr_dir[16] = "\\*";
 
+
+
 /*
  *		Kernel's entry point
 **/
@@ -71,6 +73,11 @@ void main(uint32_t r0, uint32_t r1, uint32_t atags){
     }
 
   }
+  /////////////////////////////////////////////////////
+  // uint32_t ret_val = ((int*)(void)(&buffer[0]))();
+  // printf_serial(ret_val);
+  // printf_video(ret_val);
+  /////////////////////////////////////////////////////
 
 }
 
@@ -153,7 +160,18 @@ void ls(char* input){
 */
 void cat(char* input){
   char buf[101];
-  HANDLE fHandle = sdCreateFile(input, GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+
+  // create a temp path to create the absolute path of the file name
+  char temp_path[24] = "";
+  strcat(temp_path, curr_dir);
+  for (int i = 0; i < 24; i++) {
+    if (temp_path[i] == '*') {
+      temp_path[i] = 0;
+    }
+  }
+  strcat(temp_path, input);
+
+  HANDLE fHandle = sdCreateFile(temp_path, GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
   if (fHandle != 0) {
     uint32_t bytesRead;
     int readres;
