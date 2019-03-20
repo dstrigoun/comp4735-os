@@ -44,7 +44,7 @@ void main(uint32_t r0, uint32_t r1, uint32_t atags){
   kernel_init();
   input_output_init();
 
-  sd_card_fs_demo();   //<<-- Uncomment this to show File System/SD Card demo
+  sd_card_fs_demo();
 
   //Welcome Msg Video
   hal_io_video_puts( "\n\r\n\rWelcome to MiniOS Pi Zero", 3, VIDEO_COLOR_GREEN );
@@ -75,11 +75,6 @@ void main(uint32_t r0, uint32_t r1, uint32_t atags){
     }
 
   }
-  /////////////////////////////////////////////////////
-  // uint32_t ret_val = ((int*)(void)(&buffer[0]))();
-  // printf_serial(ret_val);
-  // printf_video(ret_val);
-  /////////////////////////////////////////////////////
 
 }
 
@@ -104,7 +99,7 @@ void check_command(char* input){
     cd(arg);
   } else if (strcmp("dump", command) == 0) {
     dump(arg);
-  } else if (strcmp("testExecute", command) == 0){ 
+  } else if (strcmp("test", command) == 0){ 
     testExecute();
   }
 }
@@ -128,8 +123,8 @@ void testExecute(){
   int ret = ((int(*)(void))buf)();
 
   //print result
-  printf_serial("This is the return %d\n", ret);
-  printf_video("This is the return %c\n", ret);
+  printf_serial("\n\rThis is the return %d\n", ret);
+  printf_video("\n\rThis is the return %d\n", ret);
 }
 
 
@@ -166,14 +161,9 @@ void dump(char* input){
     do {
       if (((readres = sdReadFileRetInt(fHandle, &buf[0], 100, &bytesRead, 0)) == 0))  {
         buf[bytesRead] = '\0';  ///insert null char
-        // printf_serial("%s", &buf[0]);
-        // hal_io_video_puts(buf, 2, VIDEO_COLOR_WHITE);
       }
       else if (readres == 1 ){
         buf[bytesRead] = '\0';  ///insert null char
-        // printf_serial("%s", &buf[0]);
-        // hal_io_video_puts(buf, 2, VIDEO_COLOR_WHITE);
-        // printf_serial("EOF" );
       }
       if (readres == 1 || readres == 0){
         for (int i = 0; i < bytesRead; i++){
@@ -188,51 +178,6 @@ void dump(char* input){
     // Close the file
     sdCloseHandle(fHandle);
   }
-  // HANDLE fHandle = sdCreateFile(input, GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-  // if (fHandle != 0){
-  //   uint32_t bytesRead;
-  //   FIND_DATA find;
-  //   printf_serial("%s", "pre-find");
-  //   sdFindFirstFile(input, &find);
-  //   printf_serial("%s", "post find");
-  //   int totalBytes = find.nFileSizeLow;
-  //   int totalBytesRead = 0;
-  //   uint32_t bytesToRead;
-  //   char readBuff[101];
-  //   char hexBuff[201];
-    
-  //   printf_serial("total bytes %d\n\r", totalBytes);
-    
-  //   while (totalBytesRead < totalBytes){
-  //     if (100 < (totalBytes - totalBytesRead)){
-  //       bytesToRead = totalBytes - totalBytesRead;
-  //     } else {
-  //       bytesToRead = 100;
-  //     }
-  //     if(sdReadFileRetInt(fHandle, &readBuff, bytesToRead, &bytesRead, 0) == 0){
-  //       totalBytesRead += bytesRead;
-  //       printf_serial("totalBytesRead: %d\n\r", totalBytesRead);
-
-  //       readBuff[bytesRead] = '\0';
-  //       printf_serial("readBuf: %s", readBuff);
-
-  //       int i = 0;
-  //       for (i; i < 100; i++){
-  //         if (readBuff[i] == '\0'){
-  //           break;
-  //         }
-  //         sprintf(hexBuff+2*i, "%02X", readBuff[i]);
-  //       }
-  //       hexBuff[2*i] = '\0';
-  //       printf_serial("%s", &hexBuff[0]);
-  //       hal_io_video_puts(hexBuff, 2, VIDEO_COLOR_WHITE);
-  //     }
-  //     else {
-  //       printf_serial("%s", "dump error reading file");
-  //       return;
-  //     }
-  //   }
-  // }
 }
 
 /*
@@ -247,10 +192,12 @@ void ls(char* input){
 	FIND_DATA find;
 	char* month[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 	fh = sdFindFirstFile(curr_dir, &find);							// Find first file
+  printf_serial("\n\r");
+  printf_video("\n\r");
 	do {
 		if (find.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY){
-      printf_serial("%s <DIR>\n", find.cFileName);
-      printf_video("%s <DIR>\n", find.cFileName);
+      printf_serial("%s <DIR>\n\r", find.cFileName);
+      printf_video("%s <DIR>\n\r", find.cFileName);
     }
 		else {
       printf_serial("%c%c%c%c%c%c%c%c.%c%c%c Size: %9lu bytes, %2d/%s/%4d, LFN: %s\n",
@@ -303,7 +250,8 @@ void cat(char* input){
       }
       else if (readres == 1 ){
         buf[bytesRead] = '\0';  ///insert null char
-        printf_serial("%s", &buf[0]);
+        printf_serial("\n\r%s", &buf[0]);
+        printf_video("\n\r");
         hal_io_video_puts(buf, 2, VIDEO_COLOR_WHITE);
         printf_serial("EOF" );
       }
@@ -354,6 +302,7 @@ void cd(char* input) {
           }
           numBack++;
           curr_dir[i] = 0;
+          printf_serial(" ");
         } else {                            // letter
           curr_dir[i] = 0;
         }
@@ -417,10 +366,6 @@ void cd(char* input) {
 void kernel_init(void){
 
   hal_io_init();
-  //console_init();
-  //system_calls_init();
-  //scheduler_init();
-  //faults_init();
 
 }
 
@@ -469,25 +414,6 @@ void sd_card_fs_demo(){
   printf_serial("\n\nDirectory (/): \n");
   DisplayDirectory("\\*.*");
 
-  printf_serial("\n");
-  printf_serial("Opening Alice.txt \n");
-
-  HANDLE fHandle = sdCreateFile("Alice.txt", GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-  if (fHandle != 0) {
-    uint32_t bytesRead;
-
-    if ((sdReadFile(fHandle, &buffer[0], 500, &bytesRead, 0) == true))  {
-        buffer[bytesRead-1] = '\0';  ///insert null char
-        printf_serial("File Contents: %s", &buffer[0]);
-    }
-    else{
-      printf_serial("Failed to read" );
-    }
-
-    // Close the file
-    sdCloseHandle(fHandle);
-
-  }
 
 
 }
@@ -520,5 +446,5 @@ void DisplayDirectory(const char* dirName) {
  */
  void cur_working_dir() {
    printf_serial("\n\r$ %s\n\r", curr_dir);
-   printf_video("\n\r$ %s\n\r", curr_dir);
+   hal_io_video_puts("\n\r$\n\r", 2, VIDEO_COLOR_GREEN);
  }
