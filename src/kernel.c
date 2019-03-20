@@ -29,6 +29,7 @@ void cat(char* input);
 void cd(char* input);
 void cur_working_dir();
 void dump(char* input);
+void testExecute();
 
 char curr_dir[16] = "\\*";
 
@@ -103,8 +104,34 @@ void check_command(char* input){
     cd(arg);
   } else if (strcmp("dump", command) == 0) {
     dump(arg);
+  } else if (strcmp("testExecute", command) == 0){ 
+    testExecute();
   }
 }
+
+/*
+* Execute hardcoded external app
+*/
+void testExecute(){
+  //load file into memeory
+  HANDLE fHandle = sdCreateFile("test.bin", GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+  
+  FIND_DATA find;
+  sdFindFirstFile("test.bin", &find);
+  int totalBytes = find.nFileSizeLow;
+  uint32_t bytesRead;
+  //cast first byte to function pointer
+  char buf[99999];
+  sdReadFileRetInt(fHandle, &buf, 99999, &bytesRead, 0);
+
+  //call function
+  int ret = ((int(*)(void))buf)();
+
+  //print result
+  printf_serial("This is the return %d\n", ret);
+  printf_video("This is the return %c\n", ret);
+}
+
 
 /*
 * echo back user input
@@ -123,7 +150,16 @@ void echo(char* input){
 */
 void dump(char* input){
   char buf[101];
-  HANDLE fHandle = sdCreateFile(input, GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+  char temp_path[24] = "";
+  strcat(temp_path, curr_dir);
+  for (int i = 0; i < 24; i++) {
+    if (temp_path[i] == '*') {
+      temp_path[i] = 0;
+    }
+  }
+  strcat(temp_path, input);
+
+  HANDLE fHandle = sdCreateFile(temp_path, GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
   if (fHandle != 0) {
     uint32_t bytesRead;
     int readres;
